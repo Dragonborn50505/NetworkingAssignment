@@ -9,6 +9,8 @@ public class Health : NetworkBehaviour
 {
     [SerializeField] private float m_health;
 
+    private float m_maxHealth;
+
     private bool m_isAlive = true;
     public bool isAlive
     {
@@ -23,6 +25,10 @@ public class Health : NetworkBehaviour
         set { m_damange = value; }
     }
 
+    private void Start()
+    {
+        m_maxHealth = m_health;
+    }
 
     public void TakeDamange()
     {
@@ -65,6 +71,9 @@ public class Health : NetworkBehaviour
     public void ResurrectRPC()
     {
         Debug.Log("ResurrectRPC");
+
+        m_health = m_maxHealth;
+
         gameObject.GetComponent<SpriteRenderer>().enabled = true;
 
         int nrOfChildren = gameObject.transform.childCount;
