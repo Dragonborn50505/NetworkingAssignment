@@ -2,9 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Experimental.GlobalIllumination;
 using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 
@@ -27,7 +29,7 @@ public class TeamManager : NetworkBehaviour
     void Start()
     {
 
-        LookForAssignedTeams();
+        StartLookForAssignedTeams();
 
         //GameObject TeamTransferObj = GameObject.FindGameObjectWithTag("TeamTransfer");
         //m_blueTeamList = TeamTransferObj.GetComponent<ScoringManagment>().m_blueTeamSaved;  //ertet
@@ -84,9 +86,54 @@ public class TeamManager : NetworkBehaviour
 
         for (int i = 0; i < playerList.Count; i++)
         {
+            bool PlayerAlive = playerList[i].gameObject.GetComponent<SpriteRenderer>().isVisible;
+            Debug.Log($"{PlayerAlive}");
+
+            if (PlayerAlive == true) 
+            {
+                string PlayerTeam;
+                //GameObject.collision.gameObject.GetComponent<Player>().Team = m_team;
+                PlayerTeam = playerList[i].gameObject.GetComponent<Player>().Team;
+
+                if (PlayerTeam == "Blue")
+                {
+                    m_blueTeamList.Add(playerList[i]);
+                }
+                else if (PlayerTeam == "Red")
+                {
+                    m_redTeamList.Add(playerList[i]);
+                }
+                else
+                {
+                    Debug.Log("EROR!!!!!!!!!!!!!!!");
+                }
+            }
+        }
+        
+        
+        if (m_blueTeamList.Count <= 0 || m_redTeamList.Count <= 0)
+        {
+            CountScore();
+        }
+
+        
+        
+    }
+
+    public void StartLookForAssignedTeams()
+    {
+
+        Debug.Log("LookForAssignedTeams");
+
+        playerList = GameObject.FindGameObjectsWithTag("Player").ToList();
+
+        for (int i = 0; i < playerList.Count; i++)
+        {
+
             string PlayerTeam;
             //GameObject.collision.gameObject.GetComponent<Player>().Team = m_team;
             PlayerTeam = playerList[i].gameObject.GetComponent<Player>().Team;
+
             if (PlayerTeam == "Blue")
             {
                 m_blueTeamList.Add(playerList[i]);
@@ -100,13 +147,15 @@ public class TeamManager : NetworkBehaviour
                 Debug.Log("EROR!!!!!!!!!!!!!!!");
             }
         }
-        
-        
+
+
         if (m_blueTeamList.Count <= 0 || m_redTeamList.Count <= 0)
         {
             CountScore();
         }
-        
+
+
+
     }
 
     public void EmptyList()
@@ -115,16 +164,23 @@ public class TeamManager : NetworkBehaviour
         m_redTeamList.Clear();
     }
 
-    private void LoadScene()
+    private void PrepareForLoadScene()
     {
         for (int i = 0; i < playerList.Count; i++)
         {
+            playerList[i].GetComponent<Health>().ResurrectRPC();
             Vector2 spawnArea;
             spawnArea.x = 0.2f;
             spawnArea.y = 0.2f;
             playerList[i].transform.position = new Vector2(Random.Range(spawnArea.x, -spawnArea.x), Random.Range(spawnArea.y, -spawnArea.y));
         }
 
+        Invoke("LoadScene", 1);
+    }
+
+    private void LoadScene()
+    {
+        
         string SceneName = "Main";
         NetworkManager.SceneManager.LoadScene(SceneName, LoadSceneMode.Single);
     }
@@ -138,7 +194,7 @@ public class TeamManager : NetworkBehaviour
             string score = $"Blue {m_blueTeamScore}  :  {m_redTeamScore} Red";
             SendScoreRPC(score);
             //m_ScoreText.text = score;
-            Invoke("LoadScene", 3);
+            Invoke("PrepareForLoadScene", 3);
 
         }
         else if (m_redTeamList.Count <= 0 && !m_IsGameOver && m_blueTeamList.Count >= 1)
@@ -148,7 +204,7 @@ public class TeamManager : NetworkBehaviour
             string score = $"Blue {m_blueTeamScore}  :  {m_redTeamScore} Red";
             SendScoreRPC(score);
             //m_ScoreText.text = score;
-            Invoke("LoadScene", 3);
+            Invoke("PrepareForLoadScene", 3);
         }
     }
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,13 @@ using UnityEngine;
 
 public class Health : NetworkBehaviour
 {
-    [SerializeField] float m_health;
+    [SerializeField] private float m_health;
+
+    private bool m_isAlive = true;
+    public bool isAlive
+    {
+        get { return m_isAlive; }
+    }
 
     private float m_damange;
 
@@ -17,7 +24,6 @@ public class Health : NetworkBehaviour
     }
 
 
-
     public void TakeDamange()
     {
         if (!IsServer) return;
@@ -26,7 +32,8 @@ public class Health : NetworkBehaviour
 
         if (m_health > 0) return;
 
-        DiedServerRpc();
+        //DiedServerRpc();
+        DisableDeathRPC();
         
     }
 
@@ -39,5 +46,32 @@ public class Health : NetworkBehaviour
         this.gameObject.GetComponent<NetworkObject>().Despawn();
         Destroy(this.gameObject);
        
+    }
+
+    [Rpc(SendTo.Everyone)]
+    public void DisableDeathRPC()
+    {
+        gameObject.GetComponent<SpriteRenderer>().enabled = false;
+
+        int nrOfChildren = gameObject.transform.childCount;
+        for (int i = 0; i < nrOfChildren; i++)
+        {
+            gameObject.transform.GetChild(i).gameObject.SetActive(false);
+        }
+        m_isAlive = false;
+    }
+
+    [Rpc(SendTo.Everyone)]
+    public void ResurrectRPC()
+    {
+        Debug.Log("ResurrectRPC");
+        gameObject.GetComponent<SpriteRenderer>().enabled = true;
+
+        int nrOfChildren = gameObject.transform.childCount;
+        for (int i = 0; i < nrOfChildren; i++)
+        {
+            gameObject.transform.GetChild(i).gameObject.SetActive(true);
+        }
+        m_isAlive = true;
     }
 }
